@@ -1,7 +1,10 @@
-from fastapi import FastAPI, Request, HTTPException
+import os
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import json
+import hmac
+import hashlib
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -18,24 +21,40 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+
+
+async def verify_signature(request: Request):
+    signature = request.headers.get("X-Turn-Hook-Signature")
+    if not signature:
+        raise HTTPException(status_code=401, detail="No signature provided")
+    
+    body = await request.body()
+    WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+    computed_signature = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    if not hmac.compare_digest(computed_signature, signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
 @app.post("/webhook")
-async def webhook(request: Request):
+async def webhook(request: Request, verified: bool = Depends(verify_signature)):
     try:
-        # Log the incoming request
-        logger.info("Received webhook request")
+        logger.info("Received verified webhook request")
         
-        # Get the raw body of the request
         body = await request.json()
-        
-        # Log the entire webhook payload as JSON
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         
-        # Save the webhook payload to a JSON file
+        # Process the webhook payload here
+        # For example, check the type of event and respond accordingly
+        
         with open('webhook_payload.json', 'w') as f:
             json.dump(body, f, indent=2)
         
         logger.info("Webhook payload saved to webhook_payload.json")
-        return {"status": "success", "message": "Webhook payload logged successfully"}
+        return {"status": "success", "message": "Webhook processed successfully"}
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

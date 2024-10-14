@@ -24,16 +24,33 @@ async def webhook(request: Request):
     try:
         logger.info("Received webhook request")
         
-        body = await request.json()
+        # Log the raw request body
+        raw_body = await request.body()
+        logger.info(f"Raw request body: {raw_body}")
+        
+        # Check if the body is empty
+        if not raw_body:
+            raise ValueError("Empty request body")
+        
+        # Try to parse the JSON
+        try:
+            body = await request.json()
+        except json.JSONDecodeError as json_error:
+            logger.error(f"JSON parsing error: {str(json_error)}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(json_error)}")
+        
         username = body.get("username", "Unknown User")
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         
         # Save the webhook payload to a JSON file
-        with open('webhook_payload.json', 'w') as f:
-            json.dump(body, f, indent=2)
+        # with open('webhook_payload.json', 'w') as f:
+        #     json.dump(body, f, indent=2)
         
-        logger.info("Webhook payload saved to webhook_payload.json")
+        logger.info("Webhook payload processed successfully")
         return {"status": "success", "message": f"Webhook processed successfully with username: {username}"}
+    except ValueError as ve:
+        logger.error(f"Error processing webhook: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -25,6 +25,7 @@ async def webhook(request: Request):
         logger.info("Received webhook request")
         
         body = await request.json()
+        username = body.get("username", "Unknown User")
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         
         # Save the webhook payload to a JSON file
@@ -32,7 +33,7 @@ async def webhook(request: Request):
             json.dump(body, f, indent=2)
         
         logger.info("Webhook payload saved to webhook_payload.json")
-        return {"status": "success", "message": "Webhook processed successfully"}
+        return {"status": "success", "message": f"Webhook processed successfully with username: {username}"}
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

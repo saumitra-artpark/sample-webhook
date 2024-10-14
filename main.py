@@ -40,7 +40,7 @@ async def webhook(request: Request):
             raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(json_error)}")
         
         username = body.get("name", "Unknown User")
-        id = body.get("id", "No ID")
+        id = body.get("user_id", "No ID")
         concern = body.get("message", "No concern")
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         

@@ -1,10 +1,8 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import json
-import hmac
-import hashlib
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,35 +19,15 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-
-
-async def verify_signature(request: Request):
-    signature = request.headers.get("X-Turn-Hook-Signature")
-    if not signature:
-        raise HTTPException(status_code=401, detail="No signature provided")
-    
-    body = await request.body()
-    WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
-    computed_signature = hmac.new(
-        WEBHOOK_SECRET.encode(),
-        body,
-        hashlib.sha256
-    ).hexdigest()
-    
-    if not hmac.compare_digest(computed_signature, signature):
-        raise HTTPException(status_code=401, detail="Invalid signature")
-
 @app.post("/webhook")
-async def webhook(request: Request, verified: bool = Depends(verify_signature)):
+async def webhook(request: Request):
     try:
-        logger.info("Received verified webhook request")
+        logger.info("Received webhook request")
         
         body = await request.json()
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         
-        # Process the webhook payload here
-        # For example, check the type of event and respond accordingly
-        
+        # Save the webhook payload to a JSON file
         with open('webhook_payload.json', 'w') as f:
             json.dump(body, f, indent=2)
         

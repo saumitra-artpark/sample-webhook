@@ -39,7 +39,9 @@ async def webhook(request: Request):
             logger.error(f"JSON parsing error: {str(json_error)}")
             raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(json_error)}")
         
-        username = body.get("username", "Unknown User")
+        username = body.get("name", "Unknown User")
+        id = body.get("id", "No ID")
+        concern = body.get("message", "No concern")
         logger.info(f"Webhook payload: {json.dumps(body, indent=2)}")
         
         # Save the webhook payload to a JSON file
@@ -47,7 +49,7 @@ async def webhook(request: Request):
         #     json.dump(body, f, indent=2)
         
         logger.info("Webhook payload processed successfully")
-        return {"status": "success", "message": f"Webhook processed successfully with username: {username}"}
+        return {"status": "success", "message": f"Webhook processed successfully with\n - username: {username}\n -id: {id}\n -concern: {concern}"}
     except ValueError as ve:
         logger.error(f"Error processing webhook: {str(ve)}")
         raise HTTPException(status_code=400, detail=str(ve))
